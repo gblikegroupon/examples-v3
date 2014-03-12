@@ -2,9 +2,8 @@ grammar MySQL;
 
 options 
 {
-	language=C;
-	output=AST;
-	backtrack=true;
+	output = AST;
+	backtrack = true;
 }
 
 tokens 
@@ -1208,25 +1207,25 @@ group_functions:
 
 
 // identifiers ---  http://dev.mysql.com/doc/refman/5.6/en/identifiers.html --------------
-schema_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("schema name = \%s \n",(char*)($tmpName.text->chars));};
-table_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("table name = \%s \n",(char*)($tmpName.text->chars));};
-engine_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("engine name = \%s \n",(char*)($tmpName.text->chars));};
-column_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("column name = \%s \n",(char*)($tmpName.text->chars));};
-view_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("view name = \%s \n",(char*)($tmpName.text->chars));};
-parser_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("index name = \%s \n",(char*)($tmpName.text->chars));};
-index_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("index name = \%s \n",(char*)($tmpName.text->chars));};
-partition_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("partition name = \%s \n",(char*)($tmpName.text->chars));};
-partition_logical_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("partition logical name = \%s \n",(char*)($tmpName.text->chars));};
-constraint_symbol_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("constraint symbol name = \%s \n",(char*)($tmpName.text->chars));};
-foreign_key_symbol_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("foreign key symbol name = \%s \n",(char*)($tmpName.text->chars));};
-collation_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("collation name = \%s \n",(char*)($tmpName.text->chars));};
-event_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("event name = \%s \n",(char*)($tmpName.text->chars));};
-user_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("user name = \%s \n",(char*)($tmpName.text->chars));};
-function_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("function name = \%s \n",(char*)($tmpName.text->chars));};
-procedure_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("procedure name = \%s \n",(char*)($tmpName.text->chars));};
-server_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("server name = \%s \n",(char*)($tmpName.text->chars));};
-wrapper_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("wrapper name = \%s \n",(char*)($tmpName.text->chars));};
-alias				: ( AS_SYM )? tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 256}? {printf("alias = \%s \n",(char*)($tmpName.text->chars));};
+schema_name			: ID ;
+table_name			: ID ;
+engine_name			: ID ;
+column_name			: ID ;
+view_name			: ID ;
+parser_name			: ID ;
+index_name			: ID ;
+partition_name			: ID ;
+partition_logical_name		: ID ;
+constraint_symbol_name		: ID ;
+foreign_key_symbol_name		: ID ;
+collation_name			: ID ;
+event_name			: ID ;
+user_name			: ID ;
+function_name			: ID ;
+procedure_name			: ID ;
+server_name			: ID ;
+wrapper_name			: ID ;
+alias_name				: ( AS_SYM )? ;
 
 
 
@@ -1350,8 +1349,8 @@ table_factor4:
 	table_atom (  NATURAL ( (LEFT|RIGHT) (OUTER)? )? JOIN_SYM table_atom )?
 ;
 table_atom:
-	  ( table_spec (partition_clause)? (alias)? (index_hint_list)? )
-	| ( subquery alias )
+	  ( table_spec (partition_clause)? (alias_name)? (index_hint_list)? )
+	| ( subquery alias_name )
 	| ( LPAREN table_references RPAREN )
 	| ( OJ_SYM table_reference LEFT OUTER JOIN_SYM table_reference ON expression )
 ;
@@ -1380,13 +1379,15 @@ partition_names:	partition_name (COMMA partition_name)* ;
 
 
 
+statement_list:
+  root_statement (SEMI root_statement)* EOF
+;
 
 
 // SQL Statement Syntax ----  http://dev.mysql.com/doc/refman/5.6/en/sql-syntax.html ----------
 root_statement:
 	(SHIFT_LEFT SHIFT_RIGHT)?  
-	( data_manipulation_statements | data_definition_statements /*| transactional_locking_statements | replication_statements*/ )
-	(SEMI)?
+	( data_manipulation_statements | data_definition_statements /*| transactional_locking_statements | replication_statements*/ )^
 ;
 
 data_manipulation_statements:
@@ -1476,7 +1477,7 @@ select_statement:
 ;
 
 select_expression:
-	SELECT 
+	SELECT^
 	
 	( ALL | DISTINCT | DISTINCTROW )? 
 	(HIGH_PRIORITY)?
@@ -1486,21 +1487,24 @@ select_expression:
 
 	select_list
 	
-	( 
-		FROM table_references 
-		( partition_clause )?
-		( where_clause )? 
-		( groupby_clause )?
-		( having_clause )?
-	) ?
+	( from_clause ) ?
 	
 	( orderby_clause )?
 	( limit_clause )?
 	( ( FOR_SYM UPDATE) | (LOCK IN_SYM SHARE_SYM MODE_SYM) )? 
 ;
 
+from_clause:
+  FROM^ table_references 
+		( partition_clause )?
+		( where_clause )? 
+		( groupby_clause )?
+		( having_clause )?
+;
+
+
 where_clause:
-	WHERE expression
+	WHERE^ expression
 ;
 
 groupby_clause:
@@ -1543,9 +1547,9 @@ table_spec:
 displayed_column :
 	( table_spec DOT ASTERISK )
 	|
-	( column_spec (alias)? )
+	( column_spec (alias_name)? )
 	| 
-	( bit_expr (alias)? )
+	( bit_expr (alias_name)? )
 ;
 
 
@@ -1583,7 +1587,7 @@ delete_multiple_table_statement2:
 
 // insert ---------  http://dev.mysql.com/doc/refman/5.6/en/insert.html  -------------------------
 insert_statements :
-	insert_statement1 | insert_statement2 | insert_statement3
+  insert_header^ (insert_statement1 | insert_statement2 | insert_statement3)
 ;
 
 insert_header:
@@ -1597,7 +1601,6 @@ insert_subfix:
 ;
 
 insert_statement1:
-	insert_header
 	(column_list)? 
 	value_list_clause
 	( insert_subfix )?
@@ -1606,7 +1609,6 @@ value_list_clause:	(VALUES | VALUE_SYM) column_value_list (COMMA column_value_li
 column_value_list:	LPAREN (bit_expr|DEFAULT) (COMMA (bit_expr|DEFAULT) )* RPAREN ;
 
 insert_statement2:
-	insert_header
 	set_columns_cluase
 	( insert_subfix )?
 ;
@@ -1614,7 +1616,6 @@ set_columns_cluase:	SET_SYM set_column_cluase ( COMMA set_column_cluase )*;
 set_column_cluase:	column_spec EQ_SYM (expression|DEFAULT) ;
 
 insert_statement3:
-	insert_header
 	(column_list)? 
 	select_expression
 	( insert_subfix )?
@@ -1677,7 +1678,7 @@ handler_statements:
 ;
 
 open_handler_statement:
-	OPEN_SYM (alias)?
+	OPEN_SYM (alias_name)?
 ;
 
 handler_statement1:
@@ -1698,11 +1699,6 @@ handler_statement3:
 close_handler_statement:
 	CLOSE_SYM
 ;
-
-
-
-
-
 
 
 // load data ------------  http://dev.mysql.com/doc/refman/5.6/en/load-data.html  ---------------------
@@ -1993,11 +1989,6 @@ drop_server_statement:
 	DROP SERVER_SYM (IF EXISTS)? server_name
 ;
 
-
-
-
-
-
 // http://dev.mysql.com/doc/refman/5.6/en/create-table.html
 create_table_statement:
 	create_table_statement1 | create_table_statement2 | create_table_statement3
@@ -2262,10 +2253,6 @@ drop_table_statement:
 truncate_table_statement:
 	TRUNCATE (TABLE)? table_name
 ;
-
-
-
-
 
 /*
 // http://dev.mysql.com/doc/refman/5.6/en/create-trigger.html
